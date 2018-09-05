@@ -4,6 +4,8 @@ const { exec } = require("child_process");
 
 const app = express();
 
+let wemoIp = "192.168.100.55";
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
@@ -17,7 +19,7 @@ app.use(function(req, res, next) {
 });
 
 app.post("/switch", function(req, res) {
-  if (typeof req.body.mac !== "undefined") {
+  if (typeof req.body.mac !== "undefined" && !wemoIp) {
     findWemoIp(req.body.mac)
       .then(msg => console.log(msg))
       .catch(err => console.log(err));
@@ -29,8 +31,6 @@ app.post("/switch", function(req, res) {
 app.listen(8081, function() {
   console.log("Server running at http://127.0.0.1:8081/");
 });
-
-let wemoIp = false;
 
 const turnSwitch = (state, ip = wemoIp, port = "49152", useAltPort = false) => {
   if (ip) {
