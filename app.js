@@ -21,8 +21,12 @@ app.use(function(req, res, next) {
 app.post("/switch", function(req, res) {
   if (typeof req.body.mac !== "undefined" && !wemoIp) {
     findWemoIp(req.body.mac)
-      .then(msg => console.log(msg))
-      .catch(err => console.log(err));
+      .then(msg => {
+        console.log(msg);
+      })
+      .catch(err => {
+        console.log(err);
+      });
   } else if (typeof req.body.state !== "undefined") {
     turnSwitch(req.body.state);
   }
