@@ -1,0 +1,10 @@
+node_modules
+.ssh
+.idea
+.dockerignore
+Dockerfile
+control.sh
+index.html
+wemo.js
+package-lock.json
+wemo_node.tar.gz

@@ -1,10 +1,12 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const { exec } = require("child_process");
+var fs = require("fs");
 
 const app = express();
 
 let wemoIp = false;
+let wemoIpLookupTimeout = false;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -64,6 +66,7 @@ const turnSwitch = (state, ip = wemoIp, port = "49152", useAltPort = false) => {
 };
 
 const findWemoIp = mac => {
+  getCachedIp();
   console.log("looking for WEMO...");
   return new Promise((res, rej) => {
     // net-tools search
@@ -77,7 +80,35 @@ const findWemoIp = mac => {
         rej(error);
       } else if (stdout !== "" && stdout.split(".").length === 4) {
         wemoIp = stdout.trim();
-        res("WEMO found! IP: " + stdout);
+        cacheIp(wemoIp);
+        clearTimeout(wemoIpLookupTimeout);
+        res("WEMO found! IP: " + wemoIp);
+      } else {
+        console.log("WEMO IP not found. Looking up for cache...");
+        wemoIpLookupTimeout = setTimeout(function() {
+          findWemoIp(mac)
+            .then(msg => {
+              console.log(msg);
+            })
+            .catch(err => {
+              console.log(err);
+            });
+        }, 15000);
+
+        fs.readFile("./cache/wemoIp.txt", "utf8", function(err, contents) {
+          if (contents !== undefined && contents.length > 0) {
+            wemoIp = contents.trim();
+            res(
+              "WEMO IP loaded from cache: " +
+                wemoIp +
+                ". Will rescan network in 15 secs"
+            );
+          } else {
+            rej(
+              "Cant find WEMO IP and have no cache! Will rescan network in 15 secs"
+            );
+          }
+        });
       }
     });
   });
@@ -97,3 +128,14 @@ const getState = (ip, port) => {
     });
   });
 };
+
+const cacheIp = ip => {
+  fs.writeFile("./cache/wemoIp.txt", ip, function(err) {
+    if (err) {
+      return console.log(err);
+    }
+    console.log("WEMO IP was cached!");
+  });
+};
+
+const getCachedIp = () => {};
