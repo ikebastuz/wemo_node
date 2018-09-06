@@ -42,11 +42,8 @@ const turnSwitch = (state, ip = wemoIp, port = "49152", useAltPort = false) => {
     const cmd = `curl -0 -A '' -X POST -H 'Accept: ' -H 'Content-type: text/xml; charset="utf-8"' -H 'SOAPACTION: \"urn:Belkin:service:basicevent:1#SetBinaryState\"' --data '<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>${state}</BinaryState></u:SetBinaryState></s:Body></s:Envelope>' -s http://${ip}:${
       useAltPort ? altPort : port
     }/upnp/control/basicevent1`;
-    console.log(cmd);
 
     exec(cmd, function(error, stdout) {
-      console.log("error" + error);
-      console.log("output" + stdout);
       if (error !== null && !useAltPort) {
         turnSwitch(state, ip, port, true);
       } else {
