@@ -4,7 +4,7 @@ const { exec } = require("child_process");
 
 const app = express();
 
-let wemoIp = "192.168.100.17";
+let wemoIp = false;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -66,7 +66,12 @@ const turnSwitch = (state, ip = wemoIp, port = "49152", useAltPort = false) => {
 const findWemoIp = mac => {
   console.log("looking for WEMO...");
   return new Promise((res, rej) => {
-    const cmd = `arp -a | grep ${mac} | cut -d"(" -f2- | cut -d")" -f1`;
+    // net-tools search
+    //const cmd = `arp -a | grep ${mac} | cut -d"(" -f2- | cut -d")" -f1`;
+
+    // iproute2 search
+    const cmd = `ip neigh | grep ${mac} | cut -d" " -f1`;
+
     exec(cmd, function(error, stdout) {
       if (error !== null) {
         rej(error);
