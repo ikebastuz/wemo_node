@@ -5,6 +5,8 @@ var fs = require("fs");
 
 const app = express();
 
+const port = 8082;
+
 let wemoIp = false;
 let wemoIpLookupTimeout = false;
 
@@ -25,48 +27,69 @@ app.post("/switch", function(req, res) {
     findWemoIp(req.body.mac)
       .then(msg => {
         console.log(msg);
+        res.send({ msg: msg });
       })
       .catch(err => {
         console.log(err);
+        res.send({ msg: err });
       });
   } else if (typeof req.body.state !== "undefined") {
-    turnSwitch(req.body.state);
+    turnSwitch(req.body.state)
+      .then(msg => {
+        console.log(msg);
+        res.send({ msg: msg });
+      })
+      .catch(err => {
+        console.log(err);
+        res.send({ msg: err });
+      });
+  } else {
+    console.log(`WEMO IP already known: ${wemoIp}`);
+    res.send({ msg: `WEMO IP already known: ${wemoIp}` });
   }
 });
 
-app.listen(8081, function() {
-  console.log("Server running at http://127.0.0.1:8081/");
+app.listen(port, function() {
+  console.log(`Server running at http://127.0.0.1:${port}/`);
 });
 
 const turnSwitch = (state, ip = wemoIp, port = "49152", useAltPort = false) => {
-  if (ip) {
-    const altPort = "49153";
-    const cmd = `curl -0 -A '' -X POST -H 'Accept: ' -H 'Content-type: text/xml; charset="utf-8"' -H 'SOAPACTION: \"urn:Belkin:service:basicevent:1#SetBinaryState\"' --data '<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>${state}</BinaryState></u:SetBinaryState></s:Body></s:Envelope>' -s http://${ip}:${
-      useAltPort ? altPort : port
-    }/upnp/control/basicevent1`;
+  return new Promise((res, rej) => {
+    if (ip) {
+      const altPort = "49153";
+      const cmd = `curl -0 -A '' -X POST -H 'Accept: ' -H 'Content-type: text/xml; charset="utf-8"' -H 'SOAPACTION: \"urn:Belkin:service:basicevent:1#SetBinaryState\"' --data '<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>${state}</BinaryState></u:SetBinaryState></s:Body></s:Envelope>' -s http://${ip}:${
+        useAltPort ? altPort : port
+      }/upnp/control/basicevent1`;
 
-    exec(cmd, function(error, stdout) {
-      if (error !== null && !useAltPort) {
-        turnSwitch(state, ip, port, true);
-      } else {
-        getState(ip, useAltPort ? altPort : port)
-          .then(newState => {
-            if (newState != state) {
-              console.log("State haven't changed!");
-            } else {
-              console.log(`State successfully set to ${newState}!`);
-            }
-          })
-          .catch(err => console.log(err));
-      }
-    });
-  } else {
-    console.log("Wemo IP still not found");
-  }
+      exec(cmd, function(error, stdout) {
+        if (error !== null && !useAltPort) {
+          turnSwitch(state, ip, port, true)
+            .then(msg => res(msg))
+            .catch(err => rej(err));
+        } else {
+          getState(ip, useAltPort ? altPort : port)
+            .then(newState => {
+              if (newState != state) {
+                console.log("State haven't changed!");
+                res("State haven't changed!");
+              } else {
+                console.log(`State successfully set to ${newState}!`);
+                res(`State successfully set to ${newState}!`);
+              }
+            })
+            .catch(err => {
+              console.log(err);
+              rej(err);
+            });
+        }
+      });
+    } else {
+      console.log("Wemo IP still not found");
+    }
+  });
 };
 
 const findWemoIp = mac => {
-  getCachedIp();
   console.log("looking for WEMO...");
   return new Promise((res, rej) => {
     // net-tools search
@@ -137,5 +160,3 @@ const cacheIp = ip => {
     console.log("WEMO IP was cached!");
   });
 };
-
-const getCachedIp = () => {};
