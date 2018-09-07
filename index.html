@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Document</title>
+</head>
+
+<body>
+	<form action="http://127.0.0.1:8080/switch" id="switchForm">
+		<label>
+			OFF<input type="radio" name="switch" value="0" checked>
+		</label>
+		<br>
+		<label>
+			ON<input type="radio" name="switch" value="1">
+		</label>
+		<br>
+		<button type="submit">Switch</button>
+	</form>
+</body>
+
+<script>
+	const findWemoIp = (mac) => {
+		const params = `mac=${mac}`;
+		const xhr = new XMLHttpRequest();
+		xhr.onreadystatechange = function () {
+			if (this.readyState == 4 && this.status == 200) {
+				console.log(JSON.parse(xhr.responseText));
+			}
+		};
+		xhr.open("POST", "http://127.0.0.1:8082/switch", true);
+		xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		xhr.send(params);
+	}
+
+
+	window.onload = function () {
+		findWemoIp('24:f5:a2:93:e5:db');
+
+		document.querySelector('#switchForm').addEventListener('submit', function (e) {
+			e.preventDefault();
+			const state = document.querySelector('input[name="switch"]:checked').value;
+			const params = `state=${state}&time=${new Date().getTime()}`;
+			const xhr = new XMLHttpRequest();
+			xhr.onreadystatechange = function () {
+				if (this.readyState == 4 && this.status == 200) {
+					console.log(JSON.parse(xhr.responseText));
+				}
+			};
+			xhr.open("POST", "http://127.0.0.1:8082/switch", true);
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhr.send(params);
+		})
+	};
+</script>
+
+</html>

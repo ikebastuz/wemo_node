@@ -1,7 +1,8 @@
 node_modules
+npm-debug.log
+index.html
 .ssh
 .idea
 control.sh
 wemo.js
-package-lock.json
 wemo_node.tar.gz
