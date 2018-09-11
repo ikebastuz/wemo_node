@@ -1,6 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const WemoApi = require("./api/wemo");
+const WemoApi = require("./api/wemoApi");
 
 const app = express();
 
