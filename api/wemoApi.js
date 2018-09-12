@@ -8,6 +8,7 @@ class WemoApi {
     this.wemoIpLookupTimeout = false;
     this.port = "49152";
     this.altPort = "49153";
+    this.arpExists = 0;
   }
 
   turnSwitch(state, ip = this.wemoIp, useAltPort = false) {
@@ -57,16 +58,22 @@ class WemoApi {
     });
   }
 
-  findWemoIp(mac, netTools = false) {
+  async findWemoIp(mac) {
+    try{
+      this.arpExists = await this.checkArpExists();
+    } catch(e){
+      this.arpExists = 0;
+    }
     console.log("looking for WEMO...");
     return new Promise((res, rej) => {
       // iproute2 search
       let cmd = `ip neigh | grep ${mac} | cut -d" " -f1`;
 
-      if (netTools) {
+      if (this.arpExists == 1) {
         // net-tools search
         cmd = `arp -a | grep ${mac} | cut -d"(" -f2- | cut -d")" -f1`;
       }
+      console.log(cmd)
       exec(cmd, (error, stdout) => {
         if (error !== null) {
           rej(error);
@@ -88,11 +95,11 @@ class WemoApi {
           }, 15000);
 
           fs.readFile(
-            path.join(__dirname, "../cache/wemoIp.txt"),
+            path.join(__dirname, "../cache/wemoIp.json"),
             "utf8",
             (err, contents) => {
               if (contents !== undefined && contents.length > 0) {
-                this.wemoIp = contents.trim();
+                this.wemoIp = JSON.parse(contents.trim());
                 res(
                   "WEMO IP loaded from cache: " +
                     this.wemoIp +
@@ -111,7 +118,7 @@ class WemoApi {
   }
 
   cacheIp(ip) {
-    fs.writeFile(path.join(__dirname, "../cache/wemoIp.txt"), ip, function(
+    fs.writeFile(path.join(__dirname, "../cache/wemoIp.json"), JSON.stringify(ip), function(
       err
     ) {
       if (err) {
@@ -119,6 +126,25 @@ class WemoApi {
       }
       console.log("WEMO IP was cached!");
     });
+  }
+
+  checkArpExists(){
+    return new Promise((res, rej) => {
+      let cmd = 
+        `if which arp >/dev/null; then
+            echo 1
+        else
+            echo 0
+        fi`;
+      exec(cmd, (error, stdout) => {
+        let result = 0;
+        if(stdout.trim() == "1"){
+          result = 1;
+        }
+        res(result);
+      });
+    })
+    
   }
 }
 
