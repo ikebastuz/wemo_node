@@ -73,7 +73,6 @@ class WemoApi {
         // net-tools search
         cmd = `arp -a | grep ${mac} | cut -d"(" -f2- | cut -d")" -f1`;
       }
-      console.log(cmd)
       exec(cmd, (error, stdout) => {
         if (error !== null) {
           rej(error);
