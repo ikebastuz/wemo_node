@@ -1,13 +1,13 @@
-const { exec } = require("child_process");
-const fs = require("fs");
-const path = require("path");
+const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 class WemoApi {
   constructor() {
     this.wemoIp = false;
     this.wemoIpLookupTimeout = false;
-    this.port = "49152";
-    this.altPort = "49153";
+    this.port = '49152';
+    this.altPort = '49153';
     this.arpExists = 0;
   }
 
@@ -18,27 +18,27 @@ class WemoApi {
           useAltPort ? this.altPort : this.port
         }/upnp/control/basicevent1`;
 
-        exec(cmd, error => {
+        exec(cmd, (error) => {
           if (error !== null && !useAltPort) {
             this.turnSwitch(state, ip, true)
-              .then(msg => res(msg))
-              .catch(err => rej(err));
+              .then((msg) => res(msg))
+              .catch((err) => rej(err));
           } else {
             this.getState(ip, useAltPort ? this.altPort : this.port)
-              .then(newState => {
+              .then((newState) => {
                 if (newState != state) {
                   res("State haven't changed!");
                 } else {
                   res(`State successfully set to ${newState}!`);
                 }
               })
-              .catch(err => {
+              .catch((err) => {
                 rej(err);
               });
           }
         });
       } else {
-        rej("Wemo IP still not found");
+        rej('Wemo IP still not found');
       }
     });
   }
@@ -59,12 +59,12 @@ class WemoApi {
   }
 
   async findWemoIp(mac) {
-    try{
+    try {
       this.arpExists = await this.checkArpExists();
-    } catch(e){
+    } catch (e) {
       this.arpExists = 0;
     }
-    console.log("looking for WEMO...");
+    console.log('looking for WEMO...');
     return new Promise((res, rej) => {
       // iproute2 search
       let cmd = `ip neigh | grep ${mac} | cut -d" " -f1`;
@@ -76,37 +76,38 @@ class WemoApi {
       exec(cmd, (error, stdout) => {
         if (error !== null) {
           rej(error);
-        } else if (stdout !== "" && stdout.split(".").length === 4) {
+        } else if (stdout !== '' && stdout.split('.').length === 4) {
           this.wemoIp = stdout.trim();
           this.cacheIp(this.wemoIp);
           clearTimeout(this.wemoIpLookupTimeout);
-          res("WEMO found! IP: " + this.wemoIp);
+          res('WEMO found! IP: ' + this.wemoIp);
         } else {
-          console.log("WEMO IP not found. Looking up for cache...");
+          console.log('WEMO IP not found. Looking up for cache...');
           this.wemoIpLookupTimeout = setTimeout(() => {
             this.findWemoIp(mac)
-              .then(msg => {
+              .then((msg) => {
                 console.log(msg);
               })
-              .catch(err => {
+              .catch((err) => {
                 console.log(err);
               });
           }, 15000);
 
           fs.readFile(
-            path.join(__dirname, "../cache/wemoIp.json"),
-            "utf8",
+            path.join(__dirname, '../cache/wemoIp.json'),
+            'utf8',
             (err, contents) => {
               if (contents !== undefined && contents.length > 0) {
                 this.wemoIp = JSON.parse(contents.trim());
                 res(
-                  "WEMO IP loaded from cache: " +
+                  'WEMO IP loaded from cache: ' +
                     this.wemoIp +
-                    ". Will rescan network in 15 secs"
+                    '. Will rescan network in 15 secs'
                 );
               } else {
+                this.pingAllLocals();
                 rej(
-                  "Cant find WEMO IP and have no cache! Will rescan network in 15 secs"
+                  'Cant find WEMO IP and have no cache! Will rescan network in 15 secs'
                 );
               }
             }
@@ -116,34 +117,40 @@ class WemoApi {
     });
   }
 
-  cacheIp(ip) {
-    fs.writeFile(path.join(__dirname, "../cache/wemoIp.json"), JSON.stringify(ip), function(
-      err
-    ) {
-      if (err) {
-        return console.log(err);
-      }
-      console.log("WEMO IP was cached!");
-    });
+  pingAllLocals() {
+    for (let addr = 0; addr <= 255; addr++) {
+      exec(`ping 192.168.100.${addr} -c 1`);
+    }
   }
 
-  checkArpExists(){
+  cacheIp(ip) {
+    fs.writeFile(
+      path.join(__dirname, '../cache/wemoIp.json'),
+      JSON.stringify(ip),
+      function(err) {
+        if (err) {
+          return console.log(err);
+        }
+        console.log('WEMO IP was cached!');
+      }
+    );
+  }
+
+  checkArpExists() {
     return new Promise((res, rej) => {
-      let cmd = 
-        `if which arp >/dev/null; then
+      let cmd = `if which arp >/dev/null; then
             echo 1
         else
             echo 0
         fi`;
       exec(cmd, (error, stdout) => {
         let result = 0;
-        if(stdout.trim() == "1"){
+        if (stdout.trim() == '1') {
           result = 1;
         }
         res(result);
       });
-    })
-    
+    });
   }
 }
 
