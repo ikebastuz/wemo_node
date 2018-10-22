@@ -42,3 +42,30 @@ app.post('/switch', async function(req, res) {
 app.listen(port, function() {
   console.log(`Server running at http://127.0.0.1:${port}/`);
 });
+
+app.get('/mmm', () => {
+  var nodemailer = require('nodemailer');
+
+  var transporter = nodemailer.createTransport({
+    service: 'Yandex',
+    auth: {
+      user: 'sub.zero.charisma@yandex.ru',
+      pass: 'ilovedg00g13'
+    }
+  });
+
+  var mailOptions = {
+    from: 'sub.zero.charisma@yandex.ru',
+    to: 'ikebastuz@gmail.com',
+    subject: 'Sending Email using Node.js',
+    text: 'That was easy!'
+  };
+
+  transporter.sendMail(mailOptions, function(error, info) {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log('Email sent: ' + info.response);
+    }
+  });
+});

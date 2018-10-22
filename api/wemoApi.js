@@ -118,9 +118,17 @@ class WemoApi {
   }
 
   pingAllLocals() {
-    for (let addr = 0; addr <= 255; addr++) {
-      exec(`ping 192.168.100.${addr} -c 1`);
-    }
+    const getIpMask = `hostname -I | awk '{print $1}'`;
+    exec(getIpMask, (error, stdout) => {
+      if (error === null && stdout != '' && stdout.includes('.')) {
+        const lanArr = stdout.split('.');
+        const lan = `${lanArr[0]}.${lanArr[1]}.${lanArr[2]}`;
+
+        for (let addr = 0; addr <= 255; addr++) {
+          exec(`ping ${lan}.${addr} -c 1`);
+        }
+      }
+    });
   }
 
   cacheIp(ip) {
